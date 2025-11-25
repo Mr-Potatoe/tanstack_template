@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import TanstackProvider from "../provider/tanstack-provider";
 import { ThemeProvider } from "@/provider/theme-provider";
+import { FloatingCredits } from "@/components/credits/FloatingCredits";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +39,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
+            <FloatingCredits/>
           </ThemeProvider>
       </TanstackProvider>
       </body>
