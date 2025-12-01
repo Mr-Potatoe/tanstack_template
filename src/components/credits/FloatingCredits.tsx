@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Code2, X, Github, ExternalLink } from 'lucide-react';
+import { Code2, X, Github } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ThemeSwitch } from '../theme/switch';
