@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Code2, X, Github } from 'lucide-react';
 
@@ -8,8 +8,56 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ThemeSwitch } from '../theme/switch';
 
+type InstallOutcome = 'idle' | 'prompting' | 'installed' | 'dismissed';
+
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
 export function FloatingCredits() {
   const [isOpen, setIsOpen] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installState, setInstallState] = useState<InstallOutcome>('idle');
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+      setInstallState('idle');
+    };
+
+    const handleAppInstalled = () => {
+      setInstallPrompt(null);
+      setInstallState('installed');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+
+    setInstallState('prompting');
+    try {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      setInstallState(choice.outcome === 'accepted' ? 'installed' : 'dismissed');
+      if (choice.outcome === 'accepted') {
+        setInstallPrompt(null);
+      }
+    } catch (error) {
+      console.error('[PWA] Install prompt failed', error);
+      setInstallState('dismissed');
+    }
+  };
 
   return (
     <>
@@ -65,7 +113,27 @@ export function FloatingCredits() {
                     GitHub Profile
                   </Button>
                 </a>
+                <Button
+                  variant="default"
+                  className="flex-1"
+                  size="sm"
+                  onClick={handleInstallClick}
+                  disabled={!installPrompt || installState === 'installed'}
+                >
+                  {installState === 'installed' ? 'Installed' : 'Install App'}
+                </Button>
               </div>
+
+              {installState === 'dismissed' && (
+                <p className="text-xs text-muted-foreground">
+                  Install dismissed — reopen this card to try again later.
+                </p>
+              )}
+              {installState === 'installed' && (
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  App installed! You can now launch it from your device.
+                </p>
+              )}
 
               <div className="pt-3 border-t">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
